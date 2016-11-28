@@ -33,7 +33,7 @@ def cal_cost (concepts, source, background):
 def cal_cost_helper(concepts, source,  background, curWeigh, path):
 	path.append(source)
 	if source not in concepts:
-		return math.pow(1+len(path), -1 * (curWeigh + 1)), path
+		return curWeigh, path
 	curEdge = concepts[source]
 	min_cost = len(curEdge.depend)
 	if len(curEdge.instance) == 0:
@@ -42,17 +42,17 @@ def cal_cost_helper(concepts, source,  background, curWeigh, path):
 				min_cost -= 1
 				continue
 			path.append(cur_depend)
-		return math.pow(1+len(path), -1 * (curWeigh + 1)) * min_cost, path
+		return curWeigh * min_cost, path
 	for child in curEdge.instance:
-		temp_path = []
 		if child in background:
 			return 0
-		child = cal_cost_helper(concepts, child, background, curWeigh + 1, temp_path)
+		child, temp_path = cal_cost_helper(concepts, child, background, curWeigh + 1, [])
+		print child, temp_path
 		if child < min_cost:
 			min_cost = child
 			path[len(path)-1] = temp_path
 			print min_cost, temp_path
-	return math.pow(1+len(path), -1 * (curWeigh + 1)) * min_cost, path
+	return curWeigh * min_cost, path
 
 concepts = make_graph("test_concept.csv")
 to_learn = "vector_space_model"
