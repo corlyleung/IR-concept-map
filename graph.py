@@ -56,8 +56,7 @@ def cal_cost_helper(concepts, source,  background, curWeigh, path):
 
 concepts = make_graph("test_concept.csv")
 to_learn = "inverted_index_construction"
-background = set()
-background.add("memory_based_methods")
+background = set(["memory_based_methods"])
 cost, path = cal_cost(concepts, "inverted_index_construction", background)
 print cost, path
 
