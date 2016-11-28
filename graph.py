@@ -27,36 +27,44 @@ def make_graph(file_name):
 	return concepts
 
 def cal_cost (concepts, source, background):
-	path = []
-	return cal_cost_helper(concepts, source, background, 1, path), path
+	return cal_cost_helper(concepts, source, background, 0, [])
 
-def cal_cost_helper(concepts, source,  background, curWeigh, path):
-	path.append(source)
+def cal_cost_helper(concepts, source,  background, depth, path):
+	cur_path = []
+	cur_path.append(source)
+	depth += 1
+	#leaf nodes
 	if source not in concepts:
-		return curWeigh, path
-	curEdge = concepts[source]
-	min_cost = len(curEdge.depend)
-	if len(curEdge.instance) == 0:
-		for cur_depend in curEdge.depend:
-			if cur_depend in background:
-				min_cost -= 1
-				continue
-			path.append(cur_depend)
-		return curWeigh * min_cost, path
-	for child in curEdge.instance:
+		return depth, path + cur_path
+
+	cur_edge = concepts[source]
+
+	#all the depends on path excluding background nodes
+	for cur_depend in cur_edge.depend:
+		if cur_depend in background:
+			continue
+		cur_path.append(cur_depend)
+
+	#return value of all depends on
+	if len(cur_edge.instance) == 0:
+		return depth+1, path + cur_path
+
+	#current max cost of all depends on
+	max_cost = math.pow(len(cur_path), -1*depth)
+
+	for child in cur_edge.instance:
 		if child in background:
-			return 0
-		child, temp_path = cal_cost_helper(concepts, child, background, curWeigh + 1, [])
-		print child, temp_path
-		if child < min_cost:
-			min_cost = child
-			path[len(path)-1] = temp_path
-			print min_cost, temp_path
-	return curWeigh * min_cost, path
+			return depth-1, path
+		child_depth, temp_path = cal_cost_helper(concepts, child, background, depth, [])
+		child_cost = math.pow(len(temp_path), -1*child_depth)
+		if child_cost > max_cost:
+			max_cost = child_cost
+			cur_path = temp_path
+	return depth, path + cur_path
 
 concepts = make_graph("test_concept.csv")
 to_learn = "vector_space_model"
 background = set(["tf_idf_weighting"])
-cost, path = cal_cost(concepts, to_learn, background)
-print cost, path
+depth, path = cal_cost(concepts, to_learn, background)
+print math.pow(len(path), -1*depth), path
 
