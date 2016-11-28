@@ -37,7 +37,7 @@ def cal_cost_helper(concepts, source,  background, curWeigh, path):
 	curEdge = concepts[source]
 	min_cost = len(curEdge.depend)
 	if len(curEdge.instance) == 0:
-		for cur_depend in curEdge:
+		for cur_depend in curEdge.depend:
 			if cur_depend in background:
 				min_cost -= 1
 				continue
@@ -55,8 +55,8 @@ def cal_cost_helper(concepts, source,  background, curWeigh, path):
 	return math.pow(1+len(path), -1 * (curWeigh + 1)) * min_cost, path
 
 concepts = make_graph("test_concept.csv")
-to_learn = "inverted_index_construction"
-background = set(["memory_based_methods"])
-cost, path = cal_cost(concepts, "inverted_index_construction", background)
+to_learn = "vector_space_model"
+background = set(["tf_idf_weighting"])
+cost, path = cal_cost(concepts, to_learn, background)
 print cost, path
 
