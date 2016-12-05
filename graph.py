@@ -90,11 +90,21 @@ def make_graph(file_name):
 				concepts[source].instance.append(target)
 	return concepts
 
+# def path_to_graph(concepts, source, back, path):
+
 def cal_cost (concepts, source, background):
 	return cal_cost_helper(concepts, source, background)
+	# result = cal_cost_helper(concepts, source, background)
+	# normal = None
+	# back = None
+	# if result.nb_sol != None:
+	# 	normal = path_to_graph(concepts, source, background, result.nb_sol)
+	# if result.b_sol != None:
+	# 	back = path_to_graph(concepts, source, background, result.b_sol)
+	# return normal, back
+
 
 def cal_cost_helper (concepts, source, background):
-	print source + '--------------'
 	result = Result()
 
 	#stop parsing because background
@@ -124,7 +134,7 @@ def cal_cost_helper (concepts, source, background):
 		if child_result.nb_sol == None:
 				all_nb = False
 		if child_result.b_sol != None:
-				no_b = True
+				at_least_one_b = True
 		if all_nb == True:
 			depends_nb_path = depends_nb_path + child_result.nb_sol.path
 			depends_nb_depth = max(depends_nb_depth, child_result.nb_sol.depth)
@@ -135,7 +145,6 @@ def cal_cost_helper (concepts, source, background):
 				depends_b_path = depends_b_path + child_result.nb_sol.path
 				depends_b_depth = max(depends_b_depth, child_result.nb_sol.depth)
 		elif child_result.b_sol == None:
-			print child_dep + " depends"
 			depends_b_path = depends_b_path + child_result.nb_sol.path
 			depends_b_depth = max(depends_b_depth, child_result.nb_sol.depth)
 		elif child_result.nb_sol == None:
@@ -153,10 +162,10 @@ def cal_cost_helper (concepts, source, background):
 		result.nb_sol.update(depends_nb_depth, depends_nb_path)
 	if at_least_one_b == True:
 		result.b_sol = Graph()
-		result.b_sol.update(depends_b_graph, depends_b_path)
+		result.b_sol.update(depends_b_depth, depends_b_path)
 
 	instances = concepts[source].instance
-	if len(instances) == None:
+	if len(instances) == 0:
 		result.add_source(source)
 		return result
 	temp_sol = Result()
@@ -192,5 +201,3 @@ to_learn = "tf_transformation"
 background = set(["tf_idf_weighting"])
 result = cal_cost(concepts, to_learn, background)
 result.print_()
-
-
