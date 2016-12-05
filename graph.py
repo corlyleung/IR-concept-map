@@ -9,7 +9,7 @@ class Edge:
 		self.instance = []
 
 	def show (self):
-		print self.name, len(self.depend), len(self.instance)
+		print self.name, self.depend, self.instance
 
 class Graph:
 	def __init__(self):
@@ -72,7 +72,7 @@ class Result:
 			self.nb_sol.print_()
 
 def get_score(depth, path):
-	return math.pow(len(path), -1 * depth)
+	return math.pow(len(path), -1.00 * depth)
 
 def make_graph(file_name):
 	concepts = {}
@@ -90,8 +90,19 @@ def make_graph(file_name):
 				concepts[source].instance.append(target)
 	return concepts
 
+# def path_to_graph(concepts, source, back, path):
+
 def cal_cost (concepts, source, background):
 	return cal_cost_helper(concepts, source, background)
+	# result = cal_cost_helper(concepts, source, background)
+	# normal = None
+	# back = None
+	# if result.nb_sol != None:
+	# 	normal = path_to_graph(concepts, source, background, result.nb_sol)
+	# if result.b_sol != None:
+	# 	back = path_to_graph(concepts, source, background, result.b_sol)
+	# return normal, back
+
 
 def cal_cost_helper (concepts, source, background):
 	result = Result()
@@ -105,21 +116,59 @@ def cal_cost_helper (concepts, source, background):
 	# source
 	if source not in concepts:
 		result.nb_sol = Graph ()
-		result.nb_sol.update(1,[source])
+		result.nb_sol.update(1,[source, "base"])
 		return result
 
+	#TODO: all depends must go in the same solution branch?
 	depends = concepts[source].depend
-	depends_depth = 0
-	depends_path = []
+
+	depends_nb_depth = 0
+	depends_nb_path = []
+	depends_b_depth = 0
+	depends_b_path = []
+	all_nb = True
+	at_least_one_b = False
+
 	for child_dep in depends:
 		child_result = cal_cost_helper(concepts, child_dep, background)
-		result.update(child_result)
+		if child_result.nb_sol == None:
+				all_nb = False
+		if child_result.b_sol != None:
+				at_least_one_b = True
+		if all_nb == True:
+			depends_nb_path = depends_nb_path + child_result.nb_sol.path
+			depends_nb_depth = max(depends_nb_depth, child_result.nb_sol.depth)
+			if child_result.b_sol != None and child_result.b_sol.score > child_result.nb_sol.score:
+				depends_b_path = depends_b_path + child_result.b_sol.path
+				depends_b_depth = max(depends_b_depth, child_result.b_sol.depth)
+			else:
+				depends_b_path = depends_b_path + child_result.nb_sol.path
+				depends_b_depth = max(depends_b_depth, child_result.nb_sol.depth)
+		elif child_result.b_sol == None:
+			depends_b_path = depends_b_path + child_result.nb_sol.path
+			depends_b_depth = max(depends_b_depth, child_result.nb_sol.depth)
+		elif child_result.nb_sol == None:
+			depends_b_path = depends_b_path + child_result.b_sol.path
+			depends_b_depth = max(depends_b_depth, child_result.b_sol.depth)
+		elif child_result.b_sol.score > child_result.nb_sol.score:
+			depends_b_path = depends_b_path + child_result.b_sol.path
+			depends_b_depth = max(depends_b_depth, child_result.b_sol.depth)
+		else:
+			depends_b_path = depends_b_path + child_result.nb_sol.path
+			depends_b_depth = max(depends_b_depth, child_result.nb_sol.depth)
+
+	if all_nb == True:
+		result.nb_sol = Graph()
+		result.nb_sol.update(depends_nb_depth, depends_nb_path)
+	if at_least_one_b == True:
+		result.b_sol = Graph()
+		result.b_sol.update(depends_b_depth, depends_b_path)
+
 	instances = concepts[source].instance
-	if len(instances) == None:
+	if len(instances) == 0:
 		result.add_source(source)
 		return result
-
-	temp_sol = None
+	temp_sol = Result()
 	for child_inst in instances:
 		child_result = cal_cost_helper(concepts, child_inst, background)
 		if temp_sol == None:
@@ -137,14 +186,18 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.b_sol = child_result.b_sol
 			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path.append(cur_inst))
 
+	if len(depends) != 0:
+		if result.nb_sol == None:
+			temp_sol.nb_sol = None
+		if result.b_sol == None:
+			temp_sol.b_sol = None
+
 	result.update(temp_sol)
 	result.add_source(source)
 	return result
 
 concepts = make_graph("test_concept.csv")
-to_learn = "vector_space_model"
-background = set([""])
+to_learn = "tf_transformation"
+background = set(["tf_idf_weighting"])
 result = cal_cost(concepts, to_learn, background)
 result.print_()
-
-
