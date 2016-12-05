@@ -55,6 +55,12 @@ class Result:
 			if depth < other.b_sol.depth:
 				depth = other.b_sol.depth
 			self.b_sol.update(depth, self.b_sol.path + other.b_sol.path)
+
+	def add_source(self, source):
+		if self.nb_sol != None:
+			self.nb_sol.update(self.nb_sol.depth + 1, self.nb_sol.path + [source])
+		if self.b_sol != None:
+			self.b_sol.update(self.b_sol.depth + 1, self.b_sol.path + [source])
   
 	def print_(self):
 		print '-------------background---------'
@@ -108,9 +114,9 @@ def cal_cost_helper (concepts, source, background):
 	for child_dep in depends:
 		child_result = cal_cost_helper(concepts, child_dep, background)
 		result.update(child_result)
-
 	instances = concepts[source].instance
 	if len(instances) == None:
+		result.add_source(source)
 		return result
 
 	temp_sol = None
@@ -132,11 +138,12 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path.append(cur_inst))
 
 	result.update(temp_sol)
+	result.add_source(source)
 	return result
 
 concepts = make_graph("test_concept.csv")
 to_learn = "vector_space_model"
-background = set(["tf_idf_weighting"])
+background = set([""])
 result = cal_cost(concepts, to_learn, background)
 result.print_()
 
