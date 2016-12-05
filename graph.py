@@ -23,9 +23,9 @@ class Graph:
 		self.depth = depth
 
 	def print_(self):
-		print 'score:' + str(self.score)
-		print 'path' + str(self.path)
-		print 'depth' + str(self.depth)
+		print 'score: ' + str(self.score)
+		print 'path: ' + str(self.path)
+		print 'depth: ' + str(self.depth)
 
 	def replace(self, other):
 		self.score = other.score
