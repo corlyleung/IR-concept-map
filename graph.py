@@ -1,5 +1,6 @@
 import csv
 import math
+import sys
 
 class Edge: 
 	def __init__(self, name):
@@ -9,6 +10,63 @@ class Edge:
 
 	def show (self):
 		print self.name, len(self.depend), len(self.instance)
+
+class Graph:
+	def __init__(self):
+		self.score = 0
+		self.path = []
+		self.depth = sys.maxint
+
+	def update(self,depth, path):
+		self.score = get_score(depth, path)
+		self.path = path
+		self.depth = depth
+
+	def print_(self):
+		print 'score:' + str(self.score)
+		print 'path' + str(self.path)
+		print 'depth' + str(self.depth)
+
+	def replace(self, other):
+		self.score = other.score
+		self.path = other.path
+		self.depth = other.depth
+
+class Result:
+	def __init__(self):
+		self.b_sol = None
+		self.nb_sol = None
+
+	def update(self, other):
+		if other == None:
+			return
+		if self.nb_sol == None:
+			self.nb_sol = other.nb_sol
+		elif other.nb_sol != None:
+			depth = self.nb_sol.depth
+			if depth < other.nb_sol.depth:
+				depth = other.nb_sol.depth
+			self.nb_sol.update(depth, self.nb_sol.path + other.nb_sol.path)
+
+		if self.b_sol == None:
+			self.b_sol = other.b_sol
+		elif other.b_sol != None:
+			depth = self.b_sol.depth
+			if depth < other.b_sol.depth:
+				depth = other.b_sol.depth
+			self.b_sol.update(depth, self.b_sol.path + other.b_sol.path)
+  
+	def print_(self):
+		print '-------------background---------'
+		if self.b_sol != None:
+			self.b_sol.print_()
+
+		print '-------------normal---------'
+		if self.nb_sol != None:
+			self.nb_sol.print_()
+
+def get_score(depth, path):
+	return math.pow(len(path), -1 * depth)
 
 def make_graph(file_name):
 	concepts = {}
@@ -27,81 +85,59 @@ def make_graph(file_name):
 	return concepts
 
 def cal_cost (concepts, source, background):
-	return cal_cost_helper(concepts, source, background, 0, [])
+	return cal_cost_helper(concepts, source, background)
 
-def cal_cost_helper(concepts, source,  background, depth, path):
+def cal_cost_helper (concepts, source, background):
+	result = Result()
+
+	#stop parsing because background
+	if source in background:
+		result.b_sol = Graph()
+		result.b_sol.update(1,[source])
+		return result
+
+	# source
 	if source not in concepts:
-		return 1, [source]
+		result.nb_sol = Graph ()
+		result.nb_sol.update(1,[source])
+		return result
 
-	cur_edge = concepts[source]
+	depends = concepts[source].depend
 	depends_depth = 0
 	depends_path = []
-	
+	for child_dep in depends:
+		child_result = cal_cost_helper(concepts, child_dep, background)
+		result.update(child_result)
 
-	path.append(cur_edge.depend)
-	for child in cur_edge.depend:
-		child_depth, child_path = cal_cost_helper(concepts, child, background, 0, [])
-		if child_depth > depends_depth:
-			depends_depth = child_depth
-		depends_path.append(child_path)
+	instances = concepts[source].instance
+	if len(instances) == None:
+		return result
 
-	if len(cur_edge.instance) == 0:
-		return depends_depth + 1, depends_path
+	temp_sol = None
+	for child_inst in instances:
+		child_result = cal_cost_helper(concepts, child_inst, background)
+		if temp_sol == None:
+			temp_sol = child_result
+			continue
+		if child_result.nb_sol == None:
+			child_result.nb_sol == temp_sol.nb_sol
+		elif temp_sol.nb_sol != None and temp_sol.nb_sol.score < child_result.nb_sol.score:
+			temp_sol.nb_sol = child_result.nb_sol
+			temp_sol.nb_sol.update(temp_sol.nb_sol.depth + 1, temp_sol.nb_sol.path.append(cur_inst))
 
-	inst_depth = 0
-	inst_path = []
-	max_score = 0
-	for cur_instance in cur_edge.instance:
-		cur_depth, cur_path = cal_cost_helper(concepts, cur_instance, background, 0, [])
-		cur_score = math.pow(len(cur_path), -1 * cur_depth)
-		if max_score < cur_score:
-			inst_path = cur_path + [cur_instance]
-			inst_depth = cur_depth
-			max_score = cur_score
-	depth = inst_depth
-	if inst_depth < depends_depth:
-		depth = depends_depth
-	return depth, inst_path + depends_path
+		if child_result.b_sol == None:
+			child_result.b_sol == temp_sol.b_sol
+		elif temp_sol.b_sol != None and temp_sol.b_sol.score < child_result.b_sol.score:
+			temp_sol.b_sol = child_result.b_sol
+			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path.append(cur_inst))
 
-	# cur_path = []
-	# cur_depth = 1
-	
-	# if source not in concepts:
-	# 	return depth, path
-	# cur_edge = concepts[source]
-
-	# #all the depends on path excluding background nodes
-	# for cur_depend in cur_edge.depend:
-	# 	if cur_depend in background:
-	# 		continue
-	# 	cur_path.append(cur_depend)
-	# 	child_depth, child_path = cal_cost_helper(concepts, cur_depend, background, depth + 1, [])
-	# 	if depth < child_depth:
-	# 		depth = child_depth
-
-	# #return value of all depends on
-	# if len(cur_edge.instance) == 0:
-	# 	return cur_depth+depth, path + cur_path
-
-	# #current max cost of all depends on
-	# max_cost = 0
-	# if len(cur_path) != 0:
-	# 	max_cost = math.pow(len(cur_path), -1*depth)
-
-	# for child in cur_edge.instance:
-	# 	if child in background:
-	# 		return depth, path
-	# 	child_depth, temp_path = cal_cost_helper(concepts, child, background, 0, [])
-	# 	child_cost = math.pow(len(temp_path), -1*child_depth)
-	# 	if child_cost > max_cost:
-	# 		max_cost = child_cost
-	# 		cur_path = temp_path
-	# 		cur_depth = child_depth
-	# return depth+cur_depth, path + cur_path
+	result.update(temp_sol)
+	return result
 
 concepts = make_graph("test_concept.csv")
 to_learn = "vector_space_model"
 background = set(["tf_idf_weighting"])
-depth, path = cal_cost(concepts, to_learn, background)
-print math.pow(len(path), -1*depth), path
+result = cal_cost(concepts, to_learn, background)
+result.print_()
+
 
