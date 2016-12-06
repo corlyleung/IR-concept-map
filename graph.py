@@ -115,7 +115,6 @@ def path_to_graph(concepts, source, background, path, result_map):
 	result_map[source] = result
 
 def write_to_csv(file_name, path_map):
-	print 'solution saved to ' + file_name
 	with open(file_name, "wb") as file:
 		writer = csv.writer(file, delimiter=',')
 		for cur in path_map.keys():
@@ -232,6 +231,7 @@ def cal_cost_helper (concepts, source, background):
 
 if (len(sys.argv) <= 2):
 	print 'not enough argument'
+print sys.argv
 
 concepts = make_graph("test_concept.csv")
 to_learn = sys.argv[1]
