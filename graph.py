@@ -107,7 +107,10 @@ def path_to_graph(concepts, source, background, path, result_map):
 		return
 	intersection = set(concepts[source].instance).intersection(path)
 	if len(intersection) != 1:
-		print 'error converting' + intersection
+		print 'error converting'
+		print intersection
+		result_map[source] = result
+		return
 	iter0 = iter(intersection)
 	child_inst = next(iter0)
 	result.instance.append(child_inst)
@@ -115,6 +118,7 @@ def path_to_graph(concepts, source, background, path, result_map):
 	result_map[source] = result
 
 def write_to_csv(file_name, path_map):
+	print 'saving to ' + file_name
 	with open(file_name, "wb") as file:
 		writer = csv.writer(file, delimiter=',')
 		for cur in path_map.keys():
@@ -129,9 +133,13 @@ def cal_cost (concepts, source, background):
 	normal = {}
 	back = {}
 	if result.nb_sol != None:
-		path_to_graph(concepts, source, background, set(result.nb_sol.path), normal)
+		path_set = set(result.nb_sol.path)
+		path_set.remove("base")
+		path_to_graph(concepts, source, background, path_set, normal)
 		write_to_csv("normal.csv", normal)
 	if result.b_sol != None:
+		path_set = set(result.b_sol.path)
+		path_set.remove("base")
 		path_to_graph(concepts, source, background, set(result.b_sol.path), back)
 		write_to_csv("background.csv", back)
 	return normal, back
@@ -152,7 +160,6 @@ def cal_cost_helper (concepts, source, background):
 		result.nb_sol.update(1,[source, "base"])
 		return result
 
-	#TODO: all depends must go in the same solution branch?
 	depends = concepts[source].depend
 
 	depends_nb_depth = 0
@@ -207,15 +214,15 @@ def cal_cost_helper (concepts, source, background):
 		if temp_sol == None:
 			temp_sol = child_result
 			continue
-		if child_result.nb_sol == None:
-			child_result.nb_sol == temp_sol.nb_sol
-		elif temp_sol.nb_sol != None and temp_sol.nb_sol.score < child_result.nb_sol.score:
+		if temp_sol.nb_sol == None:
+			temp_sol.nb_sol = child_result.nb_sol
+		elif child_result.nb_sol != None and temp_sol.nb_sol.score < child_result.nb_sol.score:
 			temp_sol.nb_sol = child_result.nb_sol
 			temp_sol.nb_sol.update(temp_sol.nb_sol.depth + 1, temp_sol.nb_sol.path.append(cur_inst))
 
-		if child_result.b_sol == None:
-			child_result.b_sol == temp_sol.b_sol
-		elif temp_sol.b_sol != None and temp_sol.b_sol.score < child_result.b_sol.score:
+		if temp_sol.b_sol == None:
+			temp_sol.b_sol = child_result.b_sol
+		elif child_result.b_sol != None and temp_sol.b_sol.score < child_result.b_sol.score:
 			temp_sol.b_sol = child_result.b_sol
 			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path.append(cur_inst))
 
@@ -224,14 +231,12 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.nb_sol = None
 		if result.b_sol == None:
 			temp_sol.b_sol = None
-
 	result.update(temp_sol)
 	result.add_source(source)
 	return result
 
 if (len(sys.argv) <= 2):
 	print 'not enough argument'
-print sys.argv
 
 concepts = make_graph("test_concept.csv")
 to_learn = sys.argv[1]
