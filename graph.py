@@ -90,18 +90,51 @@ def make_graph(file_name):
 				concepts[source].instance.append(target)
 	return concepts
 
-# def path_to_graph(concepts, source, back, path):
+def path_to_graph(concepts, source, background, path, result_map):
+	if source not in path:
+		print 'error'
+		return
+	result = Edge(source)
+	path.remove(source)
+	if source in background or source not in concepts:
+		result_map[source] = result
+		return
+	for child in concepts[source].depend:
+		path_to_graph(concepts, child, background, path, result_map)
+		result.depend.append(child)
+	if len(concepts[source].instance) == 0:
+		result_map[source] = result
+		return
+	intersection = set(concepts[source].instance).intersection(path)
+	if len(intersection) != 1:
+		print 'error converting' + intersection
+	iter0 = iter(intersection)
+	child_inst = next(iter0)
+	result.instance.append(child_inst)
+	path_to_graph(concepts, child_inst, background, path, result_map)
+	result_map[source] = result
+
+def write_to_csv(file_name, path_map):
+	with open(file_name, "wb") as file:
+		writer = csv.writer(file, delimiter=',')
+		for cur in path_map.keys():
+			for child in path_map[cur].depend:
+				writer.writerow([cur, child, "depends_on"])
+			if len(path_map[cur].instance) != 0:
+				writer.writerow([cur, path_map[cur].instance[0], "has_instance"])
+
 
 def cal_cost (concepts, source, background):
-	return cal_cost_helper(concepts, source, background)
-	# result = cal_cost_helper(concepts, source, background)
-	# normal = None
-	# back = None
-	# if result.nb_sol != None:
-	# 	normal = path_to_graph(concepts, source, background, result.nb_sol)
-	# if result.b_sol != None:
-	# 	back = path_to_graph(concepts, source, background, result.b_sol)
-	# return normal, back
+	result = cal_cost_helper(concepts, source, background)
+	normal = {}
+	back = {}
+	if result.nb_sol != None:
+		path_to_graph(concepts, source, background, set(result.nb_sol.path), normal)
+		write_to_csv("normal.csv", normal)
+	if result.b_sol != None:
+		path_to_graph(concepts, source, background, set(result.b_sol.path), back)
+		write_to_csv("background.csv", back)
+	return normal, back
 
 
 def cal_cost_helper (concepts, source, background):
@@ -199,5 +232,4 @@ def cal_cost_helper (concepts, source, background):
 concepts = make_graph("test_concept.csv")
 to_learn = "tf_transformation"
 background = set(["tf_idf_weighting"])
-result = cal_cost(concepts, to_learn, background)
-result.print_()
+normal_sol, back_sol = cal_cost(concepts, to_learn, background)
