@@ -92,7 +92,6 @@ def make_graph(file_name):
 
 def path_to_graph(concepts, source, background, path, result_map):
 	if source not in path:
-		print 'error'
 		return
 	result = Edge(source)
 	path.remove(source)
@@ -106,15 +105,15 @@ def path_to_graph(concepts, source, background, path, result_map):
 		result_map[source] = result
 		return
 	intersection = set(concepts[source].instance).intersection(path)
-	if len(intersection) != 1:
+	if len(intersection) < 1:
 		print 'error converting'
 		print intersection
+		print concepts[source].instance, source
 		result_map[source] = result
 		return
-	iter0 = iter(intersection)
-	child_inst = next(iter0)
-	result.instance.append(child_inst)
-	path_to_graph(concepts, child_inst, background, path, result_map)
+	for child_inst in intersection:
+		result.instance.append(child_inst)
+		path_to_graph(concepts, child_inst, background, path, result_map)
 	result_map[source] = result
 
 def write_to_csv(file_name, path_map):
@@ -140,10 +139,13 @@ def cal_cost (concepts, source, background):
 	if result.b_sol != None:
 		path_set = set(result.b_sol.path)
 		path_set.remove("base")
-		path_to_graph(concepts, source, background, set(result.b_sol.path), back)
+		path_to_graph(concepts, source, background, path_set, back)
 		write_to_csv("background.csv", back)
 	return normal, back
 
+def inst_back_score(depends_depth, depends_path, inst_depth, inst_path):
+	depth = max(depends_depth, inst_depth)
+	return get_score(depth, depends_path + inst_path)
 
 def cal_cost_helper (concepts, source, background):
 	result = Result()
@@ -159,7 +161,6 @@ def cal_cost_helper (concepts, source, background):
 		result.nb_sol = Graph ()
 		result.nb_sol.update(1,[source, "base"])
 		return result
-
 	depends = concepts[source].depend
 
 	depends_nb_depth = 0
@@ -197,18 +198,22 @@ def cal_cost_helper (concepts, source, background):
 			depends_b_path = depends_b_path + child_result.nb_sol.path
 			depends_b_depth = max(depends_b_depth, child_result.nb_sol.depth)
 
-	if all_nb == True:
-		result.nb_sol = Graph()
-		result.nb_sol.update(depends_nb_depth, depends_nb_path)
-	if at_least_one_b == True:
-		result.b_sol = Graph()
-		result.b_sol.update(depends_b_depth, depends_b_path)
+	if at_least_one_b == False:
+		depends_b_depth = 0
+		depends_b_path = []
 
 	instances = concepts[source].instance
 	if len(instances) == 0:
+		if all_nb == True:
+			result.nb_sol = Graph()
+			result.nb_sol.update(depends_nb_depth, depends_nb_path)
+		if at_least_one_b == True:
+			result.b_sol = Graph()
+			result.b_sol.update(depends_b_depth, depends_b_path)
 		result.add_source(source)
 		return result
 	temp_sol = Result()
+	max_nb = []
 	for child_inst in instances:
 		child_result = cal_cost_helper(concepts, child_inst, background)
 		if temp_sol == None:
@@ -229,10 +234,47 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path)
 
 	if len(depends) != 0:
-		if result.nb_sol == None:
+		if depends_nb_depth == 0 or temp_sol.nb_sol == None:
+			result.nb_sol == None
 			temp_sol.nb_sol = None
-		if result.b_sol == None:
+		else:
+			result.nb_sol = Graph()
+			result.nb_sol.update(depends_nb_depth, depends_nb_path)
+
+		if depends_b_depth == 0 and temp_sol.b_sol != None:
+			result.b_sol = Graph()
+			result.b_sol.update(depends_nb_depth, depends_nb_path)
+		elif depends_b_depth != 0 and temp_sol.b_sol == None:
+			result.b_sol = Graph()
+			result.b_sol.update(depends_b_depth, depends_b_path)
+			temp_sol.b_sol = temp_sol.nb_sol
+		elif depends_b_depth != 0 and temp_sol.b_sol != None:
+			score_b_b = inst_back_score(depends_b_depth, depends_b_path, temp_sol.b_sol.depth, temp_sol.b_sol.path)
+
+			if depends_nb_depth > 0:
+				score_nb_b = inst_back_score(depends_nb_depth, depends_nb_path, temp_sol.b_sol.depth, temp_sol.b_sol.path)
+			else:
+				score_nb_b = 0
+
+			if temp_sol.nb_sol != None:
+				score_b_nb = inst_back_score(depends_b_depth, depends_b_path, temp_sol.nb_sol.depth, temp_sol.nb_sol.path)
+			else:
+				score_b_nb = 0
+
+			if score_b_b > score_nb_b and score_b_b > score_b_nb:
+				result.b_sol = Graph()
+				result.b_sol.update(depends_b_depth, depends_b_path)
+			if score_b_b < score_nb_b and score_nb_b > score_b_nb:
+				result.b_sol = Graph()
+				result.b_sol.update(depends_nb_depth, depends_nb_path)
+			else:
+				result.b_sol = Graph()
+				result.b_sol.update(depends_b_depth, depends_b_path)
+				temp_sol.b_sol = temp_sol.nb_sol
+		else:
+			result.b_sol = None
 			temp_sol.b_sol = None
+
 	result.update(temp_sol)
 	result.add_source(source)
 	return result
