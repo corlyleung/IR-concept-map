@@ -17,7 +17,7 @@ class Graph:
 		self.path = []
 		self.depth = sys.maxint
 
-	def update(self,depth, path):
+	def update(self, depth, path):
 		self.score = get_score(depth, path)
 		self.path = path
 		self.depth = depth
@@ -218,13 +218,15 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.nb_sol = child_result.nb_sol
 		elif child_result.nb_sol != None and temp_sol.nb_sol.score < child_result.nb_sol.score:
 			temp_sol.nb_sol = child_result.nb_sol
-			temp_sol.nb_sol.update(temp_sol.nb_sol.depth + 1, temp_sol.nb_sol.path.append(cur_inst))
+			temp_sol.nb_sol.path.append(child_inst)
+			temp_sol.nb_sol.update(temp_sol.nb_sol.depth + 1, temp_sol.nb_sol.path)
 
 		if temp_sol.b_sol == None:
 			temp_sol.b_sol = child_result.b_sol
 		elif child_result.b_sol != None and temp_sol.b_sol.score < child_result.b_sol.score:
 			temp_sol.b_sol = child_result.b_sol
-			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path.append(cur_inst))
+			temp_sol.b_sol.path.append(child_inst)
+			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path)
 
 	if len(depends) != 0:
 		if result.nb_sol == None:
