@@ -279,7 +279,7 @@ def cal_cost_helper (concepts, source, background):
 	result.add_source(source)
 	return result
 
-if (len(sys.argv) <= 2):
+if (len(sys.argv) <= 1):
 	print 'not enough argument'
 
 concepts = make_graph("test_concept.csv")
