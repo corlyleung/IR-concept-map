@@ -131,16 +131,18 @@ def cal_cost (concepts, source, background):
 	result = cal_cost_helper(concepts, source, background)
 	normal = {}
 	back = {}
-	if result.nb_sol != None:
-		path_set = set(result.nb_sol.path)
-		path_set.remove("base")
-		path_to_graph(concepts, source, background, path_set, normal)
-		write_to_csv("normal.csv", normal)
+	back_score = 0
 	if result.b_sol != None:
+		back_score = result.b_sol.score
 		path_set = set(result.b_sol.path)
 		path_set.remove("base")
 		path_to_graph(concepts, source, background, path_set, back)
 		write_to_csv("background.csv", back)
+	if result.nb_sol != None and result.nb_sol.score > back_score:
+		path_set = set(result.nb_sol.path)
+		path_set.remove("base")
+		path_to_graph(concepts, source, background, path_set, normal)
+		write_to_csv("normal.csv", normal)
 	return normal, back
 
 def inst_back_score(depends_depth, depends_path, inst_depth, inst_path):
@@ -212,13 +214,17 @@ def cal_cost_helper (concepts, source, background):
 			result.b_sol.update(depends_b_depth, depends_b_path)
 		result.add_source(source)
 		return result
+
 	temp_sol = Result()
 	max_nb = []
+
 	for child_inst in instances:
 		child_result = cal_cost_helper(concepts, child_inst, background)
+
 		if temp_sol == None:
 			temp_sol = child_result
 			continue
+
 		if temp_sol.nb_sol == None:
 			temp_sol.nb_sol = child_result.nb_sol
 		elif child_result.nb_sol != None and temp_sol.nb_sol.score < child_result.nb_sol.score:
@@ -232,11 +238,6 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.b_sol = child_result.b_sol
 			temp_sol.b_sol.path.append(child_inst)
 			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path)
-
-	if temp_sol.b_sol != None:
-		print temp_sol.b_sol.path
-	if temp_sol.nb_sol != None:
-		print temp_sol.nb_sol.path
 
 	if len(depends) != 0:
 		if depends_nb_depth == 0 or temp_sol.nb_sol == None:
@@ -266,12 +267,6 @@ def cal_cost_helper (concepts, source, background):
 			else:
 				score_b_nb = 0
 
-			print 'hi3.1'
-			if temp_sol.b_sol != None:
-				print temp_sol.b_sol.path
-			if temp_sol.nb_sol != None:
-				print temp_sol.nb_sol.path
-
 			if score_b_b > score_nb_b and score_b_b > score_b_nb:
 				result.b_sol = Graph()
 				result.b_sol.update(depends_b_depth, depends_b_path)
@@ -282,10 +277,6 @@ def cal_cost_helper (concepts, source, background):
 				result.b_sol = Graph()
 				result.b_sol.update(depends_b_depth, depends_b_path)
 				temp_sol.b_sol = temp_sol.nb_sol
-			if temp_sol.b_sol != None:
-				print temp_sol.b_sol.path
-			if temp_sol.nb_sol != None:
-				print temp_sol.nb_sol.path
 
 		else:
 			result.b_sol = None
