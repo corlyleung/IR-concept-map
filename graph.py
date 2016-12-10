@@ -216,11 +216,10 @@ def cal_cost_helper (concepts, source, background):
 		return result
 
 	temp_sol = Result()
-	max_nb = []
+	max_nb = []	
 
 	for child_inst in instances:
 		child_result = cal_cost_helper(concepts, child_inst, background)
-
 		if temp_sol == None:
 			temp_sol = child_result
 			continue
@@ -240,13 +239,6 @@ def cal_cost_helper (concepts, source, background):
 			temp_sol.b_sol.update(temp_sol.b_sol.depth + 1, temp_sol.b_sol.path)
 
 	if len(depends) != 0:
-		if depends_nb_depth == 0 or temp_sol.nb_sol == None:
-			result.nb_sol == None
-			temp_sol.nb_sol = None
-		else:
-			result.nb_sol = Graph()
-			result.nb_sol.update(depends_nb_depth, depends_nb_path)
-
 		if depends_b_depth == 0 and temp_sol.b_sol != None:
 			result.b_sol = Graph()
 			result.b_sol.update(depends_nb_depth, depends_nb_path)
@@ -277,10 +269,16 @@ def cal_cost_helper (concepts, source, background):
 				result.b_sol = Graph()
 				result.b_sol.update(depends_b_depth, depends_b_path)
 				temp_sol.b_sol = temp_sol.nb_sol
-
 		else:
 			result.b_sol = None
 			temp_sol.b_sol = None
+
+		if depends_nb_depth == 0 or temp_sol.nb_sol == None:
+			result.nb_sol == None
+			temp_sol.nb_sol = None
+		else:
+			result.nb_sol = Graph()
+			result.nb_sol.update(depends_nb_depth, depends_nb_path)
 
 	result.update(temp_sol)
 	result.add_source(source)
@@ -289,7 +287,7 @@ def cal_cost_helper (concepts, source, background):
 if (len(sys.argv) <= 1):
 	print 'not enough argument'
 
-concepts = make_graph("test_concept.csv")
+concepts = make_graph("temp.csv")
 to_learn = sys.argv[1]
 background = set([])
 for idx in range(2, len(sys.argv)):
