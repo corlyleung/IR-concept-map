@@ -11,7 +11,7 @@ class Edge:
 	def show (self):
 		print self.name, self.depend, self.instance
 
-class Graph:
+class Graphs:
 	def __init__(self):
 		self.score = 0
 		self.path = []
@@ -119,7 +119,7 @@ def path_to_graph(concepts, source, background, path, result_map):
 def write_to_csv(file_name, path_map):
 	print 'saving to ' + file_name
 	with open(file_name, "wb") as file:
-		writer = csv.writer(file, delimiter=',')
+		writer = csv.writer(file, delimiter='\t')
 		for cur in path_map.keys():
 			for child in path_map[cur].depend:
 				writer.writerow([cur, child, "depends_on"])
@@ -154,13 +154,13 @@ def cal_cost_helper (concepts, source, background):
 
 	#stop parsing because background
 	if source in background:
-		result.b_sol = Graph()
+		result.b_sol = Graphs()
 		result.b_sol.update(1,[source])
 		return result
 
 	# source
 	if source not in concepts:
-		result.nb_sol = Graph ()
+		result.nb_sol = Graphs ()
 		result.nb_sol.update(1,[source, "base"])
 		return result
 	depends = concepts[source].depend
@@ -207,10 +207,10 @@ def cal_cost_helper (concepts, source, background):
 	instances = concepts[source].instance
 	if len(instances) == 0:
 		if all_nb == True:
-			result.nb_sol = Graph()
+			result.nb_sol = Graphs()
 			result.nb_sol.update(depends_nb_depth, depends_nb_path)
 		if at_least_one_b == True:
-			result.b_sol = Graph()
+			result.b_sol = Graphs()
 			result.b_sol.update(depends_b_depth, depends_b_path)
 		result.add_source(source)
 		return result
@@ -240,10 +240,10 @@ def cal_cost_helper (concepts, source, background):
 
 	if len(depends) != 0:
 		if depends_b_depth == 0 and temp_sol.b_sol != None:
-			result.b_sol = Graph()
+			result.b_sol = Graphs()
 			result.b_sol.update(depends_nb_depth, depends_nb_path)
 		elif depends_b_depth != 0 and temp_sol.b_sol == None:
-			result.b_sol = Graph()
+			result.b_sol = Graphs()
 			result.b_sol.update(depends_b_depth, depends_b_path)
 			temp_sol.b_sol = temp_sol.nb_sol
 		elif depends_b_depth != 0 and temp_sol.b_sol != None:
@@ -260,13 +260,13 @@ def cal_cost_helper (concepts, source, background):
 				score_b_nb = 0
 
 			if score_b_b > score_nb_b and score_b_b > score_b_nb:
-				result.b_sol = Graph()
+				result.b_sol = Graphs()
 				result.b_sol.update(depends_b_depth, depends_b_path)
 			elif score_b_b < score_nb_b and score_nb_b > score_b_nb:
-				result.b_sol = Graph()
+				result.b_sol = Graphs()
 				result.b_sol.update(depends_nb_depth, depends_nb_path)
 			else:
-				result.b_sol = Graph()
+				result.b_sol = Graphs()
 				result.b_sol.update(depends_b_depth, depends_b_path)
 				temp_sol.b_sol = temp_sol.nb_sol
 		else:
@@ -277,7 +277,7 @@ def cal_cost_helper (concepts, source, background):
 			result.nb_sol == None
 			temp_sol.nb_sol = None
 		else:
-			result.nb_sol = Graph()
+			result.nb_sol = Graphs()
 			result.nb_sol.update(depends_nb_depth, depends_nb_path)
 
 	result.update(temp_sol)
@@ -287,7 +287,7 @@ def cal_cost_helper (concepts, source, background):
 if (len(sys.argv) <= 1):
 	print 'not enough argument'
 
-concepts = make_graph("temp.csv")
+concepts = make_graph("test_concept2.csv")
 to_learn = sys.argv[1]
 background = set([])
 for idx in range(2, len(sys.argv)):
