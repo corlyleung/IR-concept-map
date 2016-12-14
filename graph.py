@@ -174,6 +174,8 @@ def cal_cost_helper (concepts, source, background):
 
 	for child_dep in depends:
 		child_result = cal_cost_helper(concepts, child_dep, background)
+		print source + '...................' + child_dep
+
 		if child_result.nb_sol == None:
 				all_nb = False
 		if child_result.b_sol != None:
@@ -181,7 +183,7 @@ def cal_cost_helper (concepts, source, background):
 		if all_nb == True:
 			depends_nb_path = depends_nb_path + child_result.nb_sol.path
 			depends_nb_depth = max(depends_nb_depth, child_result.nb_sol.depth)
-			if child_result.b_sol != None and child_result.b_sol.score > child_result.nb_sol.score:
+			if child_result.b_sol != None and (child_result.b_sol.score > child_result.nb_sol.score or depends_b_depth == 0):
 				depends_b_path = depends_b_path + child_result.b_sol.path
 				depends_b_depth = max(depends_b_depth, child_result.b_sol.depth)
 			else:

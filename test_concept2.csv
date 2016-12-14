@@ -23,7 +23,7 @@ text_retrieval_problem,database_retrieval,depend_on,1,Directed
 text_retrieval_problem,relevance,depend_on,1,Directed
 text_retrieval_problem,document_selection,depend_on,1,Directed
 text_retrieval_problem,document_ranking,depend_on,1,Directed
-text_retrieval_methods,ranking_Function,depend_on,1,Directed
+text_retrieval_methods,ranking_function,depend_on,1,Directed
 text_retrieval_methods,similarity_based_models,has_instance,1,Directed
 text_retrieval_methods,probabilistic_retrieval_model,has_instance,1,Directed
 similarity_based_models,vector_space_model,depend_on,1,Directed
